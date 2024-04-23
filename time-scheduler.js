@@ -371,17 +371,24 @@ module.exports = function(RED) {
 							return msg;
 						} else {
 							try {
+								const currentData = getNodeData();
 								const parsedInput = JSON.parse(value);
 
 								const parsedTimers = parsedInput.timers;
 								if (validateTimers(parsedTimers)) {
 									node.status({ fill: "green", shape: "dot", text: "time-scheduler.payloadReceived" });
+
 									setTimers(parsedTimers.filter(timer => timer.output < config.devices.length));
+
+									if (parsedInput.settings) setSettings(parsedInput.settings);
+
+									if ((currentData.timers.length || Object.keys(currentData.settings).length) && JSON.stringify(parsedInput) !== JSON.stringify(currentData)) {
+										msg.payload = serializeData();
+										node.send(msg);
+									}
 								} else {
 									node.status({ fill: "yellow", shape: "dot", text: "time-scheduler.invalidPayload" });
 								}
-
-								if (parsedInput.settings) setSettings(parsedInput.settings);
 							} catch (e) {
 								node.status({ fill: "red", shape: "dot", text: e.toString() });
 							}
